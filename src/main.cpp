@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
   int ls_iter;
 
   /* --- other --- */
+  // TODO: What is this? Why do you need it?
   int myid;
   int size;
   struct rusage r_usage;
@@ -67,8 +68,6 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  /*--- INITIALIZATION ---*/
 
   /* Instantiate objects */
   config = new Config();
@@ -83,13 +82,13 @@ int main(int argc, char *argv[]) {
       printf("USAGE: ./main </path/to/configfile> \n");
     }
     MPI_Finalize();
-    return (0);
+    return 0;
   }
   int err = config->readFromFile(argv[1]);
   if (err) {
-    printf("\nError while reading config file!\n");
+    printf("Error while reading config file!\n");
     MPI_Finalize();
-    return (0);
+    return 0;
   }
 
   /* Initialize training and validation data */
@@ -105,12 +104,10 @@ int main(int argc, char *argv[]) {
                            config->fval_labels);
 
   /* Initialize XBraid */
-  primaltrainapp =
-      new myBraidApp(trainingdata, network, config, MPI_COMM_WORLD);
-  adjointtrainapp = new myAdjointBraidApp(
-      trainingdata, network, config, primaltrainapp->getCore(), MPI_COMM_WORLD);
-  primalvalapp =
-      new myBraidApp(validationdata, network, config, MPI_COMM_WORLD);
+  primaltrainapp = new myBraidApp(trainingdata, network, config,MPI_COMM_WORLD);
+  adjointtrainapp = new myAdjointBraidApp(trainingdata, network, config,
+      primaltrainapp->getCore(), MPI_COMM_WORLD);
+  primalvalapp = new myBraidApp(validationdata, network, config, MPI_COMM_WORLD);
 
   /* Initialize the network  */
   primaltrainapp->GetGridDistribution(&ilower, &iupper);
@@ -119,16 +116,11 @@ int main(int argc, char *argv[]) {
   ndesign_local = network->getnDesignLocal();
   ndesign_global = network->getnDesignGlobal();
 
-  /* Print some network information */
-  int startid = ilower;
-  if (ilower == 0)
-    startid = -1;
-  printf("%d: Layer range: [%d, %d] / %d\n", myid, startid, iupper,
-         config->nlayers);
-  printf("%d: Design variables (local/global): %d/%d\n", myid, ndesign_local,
-         ndesign_global);
+  /* Print some neural network information */
+  printf("%d: Layer range: [%d, %d] / %d\n", myid, ilower, iupper, config->nlayers);
+  printf("%d: Design variables (local/global): %d/%d\n", myid, ndesign_local, ndesign_global);
 
-  /* Initialize hessian approximation */
+  /* Initialize Hessian approximation */
   HessianApprox *hessian = 0;
   switch (config->hessianapprox_type) {
   case BFGS_SERIAL:
@@ -139,6 +131,10 @@ int main(int argc, char *argv[]) {
     break;
   case IDENTITY:
     hessian = new Identity(MPI_COMM_WORLD, ndesign_local);
+    break;
+  default:
+    printf("Error: unexpected hessianapprox_type returned");
+    return 0;
   }
 
   /* Allocate ascent direction for design updates */
@@ -171,6 +167,7 @@ int main(int argc, char *argv[]) {
            "Accur_train  Accur_val   Time(sec)\n");
   }
 
+  // TODO: WTF? This is "enabled"? Looks like testing code to me...
 #if 1
   /* --- OPTIMIZATION --- */
   StartTime = MPI_Wtime();
@@ -207,14 +204,10 @@ int main(int argc, char *argv[]) {
 
     /* Communicate loss and accuracy. This is actually only needed for output.
      * Remove it. */
-    MPI_Allreduce(&loss_train, &losstrain_out, 1, MPI_MyReal, MPI_SUM,
-                  MPI_COMM_WORLD);
-    MPI_Allreduce(&loss_val, &lossval_out, 1, MPI_MyReal, MPI_SUM,
-                  MPI_COMM_WORLD);
-    MPI_Allreduce(&accur_train, &accurtrain_out, 1, MPI_MyReal, MPI_SUM,
-                  MPI_COMM_WORLD);
-    MPI_Allreduce(&accur_val, &accurval_out, 1, MPI_MyReal, MPI_SUM,
-                  MPI_COMM_WORLD);
+    MPI_Allreduce(&loss_train, &losstrain_out, 1, MPI_MyReal, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&loss_val, &lossval_out, 1, MPI_MyReal, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&accur_train, &accurtrain_out, 1, MPI_MyReal, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&accur_val, &accurval_out, 1, MPI_MyReal, MPI_SUM, MPI_COMM_WORLD);
 
     /* Output */
     StopTime = MPI_Wtime();
@@ -261,8 +254,7 @@ int main(int argc, char *argv[]) {
 
     if (config->stepsize_type == BACKTRACKINGLS) {
       /* Compute wolfe condition */
-      wolfe = vecdot_par(ndesign_local, network->getGradient(), ascentdir,
-                         MPI_COMM_WORLD);
+      wolfe = vecdot_par(ndesign_local, network->getGradient(), ascentdir, MPI_COMM_WORLD);
 
       /* Start linesearch iterations */
       ls_stepsize = config->getStepsize(iter);
@@ -291,8 +283,7 @@ int main(int argc, char *argv[]) {
           }
 
           /* Go back part of the step */
-          network->updateDesign((1.0 - config->ls_factor) * stepsize, ascentdir,
-                                MPI_COMM_WORLD);
+          network->updateDesign((1.0 - config->ls_factor) * stepsize, ascentdir, MPI_COMM_WORLD);
 
           /* Decrease the stepsize */
           ls_stepsize = ls_stepsize * config->ls_factor;
@@ -324,6 +315,7 @@ int main(int argc, char *argv[]) {
  *       ydot = (dfdx)  xdot
  * choosing xdot to be a vector of all ones, ybar = 1.0;
  * ==================================================================================*/
+ // TODO: Why is this disabled?
 #if 0
  
     if (size == 1)
@@ -354,7 +346,6 @@ int main(int argc, char *argv[]) {
         braid_Drive(core_adj);
         braid_evalInitDiff(core_adj, app_train);
 
-
         MyReal xtx = 0.0;
         MyReal EPS = 1e-7;
         for (int i = 0; i < ndesign_global; i++)
@@ -365,7 +356,6 @@ int main(int argc, char *argv[]) {
             network->getDesign()[i] += EPS;
         }
 
-
         /* New objective function evaluation */
         braid_evalInit(core_train, app_train);
         braid_Drive(core_train);
@@ -373,7 +363,6 @@ int main(int argc, char *argv[]) {
 
         /* Finite differences */
         MyReal yty = (obj1 - obj0)/EPS;
-
 
         /* Print adjoint dot test result */
         printf(" Dot-test: %1.16e  %1.16e\n\n Rel. error  %3.6f %%\n\n", xtx, yty, (yty-xtx)/xtx * 100.);
