@@ -16,32 +16,32 @@
  */
 class Layer {
  protected:
-  int dim_In;   /* Dimension of incoming data */
-  int dim_Out;  /* Dimension of outgoing data */
-  int dim_Bias; /* Dimension of the bias vector */
-  int nweights; /* Number of weights */
-  int ndesign;  /* Total number of design variables */
+  int dim_In;   // Dimension of incoming data 
+  int dim_Out;  // Dimension of outgoing data 
+  int dim_Bias; // Dimension of the bias vector 
+  int nweights; // Number of weights 
+  int ndesign;  // Total number of design variables 
 
   int nconv;
   int csize;
 
-  int index;           /* Number of the layer */
-  MyReal dt;           /* Step size for Layer update */
-  MyReal *weights;     /* Weight matrix, flattened as a vector */
-  MyReal *weights_bar; /* Derivative of the Weight matrix*/
-  MyReal *bias;        /* Bias */
-  MyReal *bias_bar;    /* Derivative of bias */
+  int index;           // Number of the layer 
+  MyReal dt;           // Step size for Layer update 
+  MyReal *weights;     // Weight matrix, flattened as a vector 
+  MyReal *weights_bar; // Derivative of the Weight matrix
+  MyReal *bias;        // Bias 
+  MyReal *bias_bar;    // Derivative of bias 
   MyReal
-      gamma_tik; /* Parameter for Tikhonov regularization of weights and bias */
-  MyReal gamma_ddt; /* Parameter for DDT regularization of weights and bias */
-  int activ;        /* Activaation function (enum element) */
-  int type;         /* Type of the layer (enum element) */
+      gamma_tik; // Parameter for Tikhonov regularization of weights and bias 
+  MyReal gamma_ddt; // Parameter for DDT regularization of weights and bias 
+  int activ;        // Activaation function (enum element) 
+  int type;         // Type of the layer (enum element) 
 
-  MyReal *update;     /* Auxilliary for computing fwd update */
-  MyReal *update_bar; /* Auxilliary for computing bwd update */
+  MyReal *update;     // Auxilliary for computing fwd update 
+  MyReal *update_bar; // Auxilliary for computing bwd update 
 
  public:
-  /* Available layer types */
+  // Available layer types 
   enum layertype {
     OPENZERO = 0,
     OPENDENSE = 1,
@@ -59,28 +59,28 @@ class Layer {
 
   virtual ~Layer();
 
-  /* Set time step size */
+  // Set time step size 
   void setDt(MyReal DT);
 
-  /* Set design and gradient memory location */
+  // Set design and gradient memory location 
   void setMemory(MyReal *design_memloc, MyReal *gradient_memloc);
 
-  /* Some Get..() functions */
+  // Some Get..() functions 
   MyReal getDt();
   MyReal getGammaTik();
   MyReal getGammaDDT();
   int getActivation();
   int getType();
 
-  /* Get pointer to the weights bias*/
+  // Get pointer to the weights bias
   MyReal *getWeights();
   MyReal *getBias();
 
-  /* Get pointer to the weights bias bar */
+  // Get pointer to the weights bias bar 
   MyReal *getWeightsBar();
   MyReal *getBiasBar();
 
-  /* Get the dimensions */
+  // Get the dimensions 
   int getDimIn();
   int getDimOut();
   int getDimBias();
@@ -90,13 +90,13 @@ class Layer {
   int getnConv();
   int getCSize();
 
-  /* Get the layer index (i.e. the time step) */
+  // Get the layer index (i.e. the time step) 
   int getIndex();
 
-  /* Prints to screen */
+  // Prints to screen 
   void print_data(MyReal *data_Out);
 
-  /* Activation function and derivative */
+  // Activation function and derivative 
   MyReal activation(MyReal x);
   MyReal dactivation(MyReal x);
 
@@ -110,7 +110,7 @@ class Layer {
    */
   void unpackDesign(MyReal *buffer);
 
-  /* Scales the weights by a factor and resets the gradient to zero. */
+  // Scales the weights by a factor and resets the gradient to zero. 
   void scaleDesign(MyReal factor);
 
   /**
@@ -166,7 +166,7 @@ class Layer {
   virtual void applyBWD(MyReal *state, MyReal *state_bar,
                         int compute_gradient) = 0;
 
-  /* ReLu Activation and derivative */
+  // ReLu Activation and derivative 
   MyReal ReLu_act(MyReal x);
   MyReal dReLu_act(MyReal x);
 
@@ -175,7 +175,7 @@ class Layer {
   MyReal SmoothReLu_act(MyReal x);
   MyReal dSmoothReLu_act(MyReal x);
 
-  /* tanh Activation and derivative */
+  // tanh Activation and derivative 
   MyReal tanh_act(MyReal x);
   MyReal dtanh_act(MyReal x);
 };
@@ -202,7 +202,7 @@ class DenseLayer : public Layer {
  */
 class OpenDenseLayer : public DenseLayer {
  protected:
-  MyReal *example; /* Pointer to the current example data */
+  MyReal *example; // Pointer to the current example data 
 
  public:
   OpenDenseLayer(int dimI, int dimO, int activation, MyReal gammatik);
@@ -220,7 +220,7 @@ class OpenDenseLayer : public DenseLayer {
  */
 class OpenExpandZero : public Layer {
  protected:
-  MyReal *example; /* Pointer to the current example data */
+  MyReal *example; // Pointer to the current example data 
  public:
   OpenExpandZero(int dimI, int dimO);
   ~OpenExpandZero();
@@ -237,9 +237,9 @@ class OpenExpandZero : public Layer {
  */
 class ClassificationLayer : public Layer {
  protected:
-  MyReal *label; /* Pointer to the current label vector */
+  MyReal *label; // Pointer to the current label vector 
 
-  MyReal *probability; /* vector of pedicted class probabilities */
+  MyReal *probability; // vector of pedicted class probabilities 
 
  public:
   ClassificationLayer(int idx, int dimI, int dimO, MyReal gammatik);
@@ -348,7 +348,7 @@ class ConvLayer : public Layer {
  */
 class OpenConvLayer : public Layer {
  protected:
-  MyReal *example; /* Pointer to the current example data */
+  MyReal *example; // Pointer to the current example data 
 
  public:
   OpenConvLayer(int dimI, int dimO);

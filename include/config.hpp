@@ -6,24 +6,24 @@
 
 #define CONFIG_ARG_MAX_BYTES 128
 
-/* Available activation functions */
+// Available activation functions 
 enum activation { TANH, RELU, SMRELU };
 
-/* Available network types */
+// Available network types 
 enum networkType { DENSE, CONVOLUTIONAL };
 
-/* Available batch types */
+// Available batch types 
 enum batchtype { DETERMINISTIC, STOCHASTIC };
 
-/* Available hessian approximation types */
+// Available hessian approximation types 
 enum hessiantype { BFGS_SERIAL, LBFGS, IDENTITY };
 
-/* Available stepsize selection methods */
+// Available stepsize selection methods 
 enum stepsizetype { FIXED, BACKTRACKINGLS, ONEOVERK };
 
 class Config {
  private:
-  /* Linked list for reading config options */
+  // Linked list for reading config options 
   struct config_option {
     struct config_option *prev;
     //  config_option_t prev;
@@ -31,11 +31,11 @@ class Config {
     char value[CONFIG_ARG_MAX_BYTES];
   };
 
-  /* Helper function: Parse the config file */
+  // Helper function: Parse the config file 
   config_option *parsefile(char *path);
 
- public: /* List all configuration options here */
-  /* Data set */
+ public: // List all configuration options here 
+  // Data set 
   const char *datafolder;
   const char *ftrain_ex;
   const char *ftrain_labels;
@@ -49,7 +49,7 @@ class Config {
   int nfeatures;
   int nclasses;
 
-  /* Neural Network */
+  // Neural Network 
   int nchannels;
   int nlayers;
   MyReal T;
@@ -60,7 +60,7 @@ class Config {
   MyReal weights_init;
   MyReal weights_class_init;
 
-  /* XBraid */
+  // XBraid 
   int braid_cfactor0;
   int braid_cfactor;
   int braid_maxlevels;
@@ -75,7 +75,7 @@ class Config {
   int braid_nrelax;
   int braid_nrelax0;
 
-  /* Optimization */
+  // Optimization 
   int batch_type;
   int nbatch;
   MyReal gamma_tik;
@@ -91,16 +91,16 @@ class Config {
   int lbfgs_stages;
   int validationlevel;
 
-  /* Constructor sets default values */
+  // Constructor sets default values 
   Config();
 
-  /* Destructor */
+  // Destructor 
   ~Config();
 
-  /* Reads the config options from file */
+  // Reads the config options from file 
   int readFromFile(char *configfilename);
 
-  /* Writes config options to the file (File must be open!) */
+  // Writes config options to the file (File must be open!) 
   int writeToFile(FILE *outfile);
 
   /* Returns a stepsize, depending on the selected stepsize type and current

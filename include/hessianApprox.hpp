@@ -6,8 +6,8 @@
 
 class HessianApprox {
  protected:
-  int dimN;         /* Dimension of the gradient vector */
-  MPI_Comm MPIcomm; /* MPI communicator for parallel L-BFGS updates */
+  int dimN;         // Dimension of the gradient vector 
+  MPI_Comm MPIcomm; // MPI communicator for parallel L-BFGS updates 
 
  public:
   HessianApprox(MPI_Comm comm);
@@ -26,18 +26,18 @@ class HessianApprox {
 
 class L_BFGS : public HessianApprox {
  protected:
-  int M; /* Length of the l-bfgs memory (stages) */
+  int M; // Length of the l-bfgs memory (stages) 
 
-  /* L-BFGS memory */
-  MyReal **s;           /* storing M (x_{k+1} - x_k) vectors */
-  MyReal **y;           /* storing M (\nabla f_{k+1} - \nabla f_k) vectors */
-  MyReal *rho;          /* storing M 1/y^Ts values */
-  MyReal H0;            /* Initial Hessian scaling factor */
-  MyReal *design_old;   /* Design at previous iteration */
-  MyReal *gradient_old; /* Gradient at previous iteration */
+  // L-BFGS memory 
+  MyReal **s;           // storing M (x_{k+1} - x_k) vectors 
+  MyReal **y;           // storing M (\nabla f_{k+1} - \nabla f_k) vectors 
+  MyReal *rho;          // storing M 1/y^Ts values 
+  MyReal H0;            // Initial Hessian scaling factor 
+  MyReal *design_old;   // Design at previous iteration 
+  MyReal *gradient_old; // Gradient at previous iteration 
 
  public:
-  L_BFGS(MPI_Comm comm, int dimN, /* Local design dimension */
+  L_BFGS(MPI_Comm comm, int dimN, // Local design dimension 
          int stage);
   ~L_BFGS();
 
@@ -56,9 +56,9 @@ class BFGS : public HessianApprox {
   MyReal *s;
   MyReal *y;
   MyReal
-      *Hessian; /* Storing the Hessian approximation (flattened: dimN*dimN) */
-  MyReal *design_old;   /* Design at previous iteration */
-  MyReal *gradient_old; /* Gradient at previous iteration */
+      *Hessian; // Storing the Hessian approximation (flattened: dimN*dimN) 
+  MyReal *design_old;   // Design at previous iteration 
+  MyReal *gradient_old; // Gradient at previous iteration 
 
  public:
   BFGS(MPI_Comm comm, int N);

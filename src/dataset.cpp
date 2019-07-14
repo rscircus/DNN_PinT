@@ -26,17 +26,17 @@ void DataSet::initialize(int nElements, int nFeatures, int nLabels, int nBatch,
   MPI_Comm_rank(comm, &MPIrank);
   MPI_Comm_size(comm, &MPIsize);
 
-  /* Sanity check */
+  //  Sanity check 
   if (nbatch > nelements) nbatch = nelements;
 
-  /* Allocate feature vectors on first processor */
+  //  Allocate feature vectors on first processor 
   if (MPIrank == 0) {
     examples = new MyReal *[nelements];
     for (int ielem = 0; ielem < nelements; ielem++) {
       examples[ielem] = new MyReal[nfeatures];
     }
   }
-  /* Allocate label vectors on last processor */
+  //  Allocate label vectors on last processor 
   if (MPIrank == MPIsize - 1) {
     labels = new MyReal *[nelements];
     for (int ielem = 0; ielem < nelements; ielem++) {
@@ -50,12 +50,12 @@ void DataSet::initialize(int nElements, int nFeatures, int nLabels, int nBatch,
     availIDs = new int[nelements];  // all elements
     batchIDs = new int[nbatch];
 
-    /* Initialize available ID with identity */
+    //  Initialize available ID with identity 
     for (int idx = 0; idx < nelements; idx++) {
       availIDs[idx] = idx;
     }
 
-    /* Initialize the batch with identity */
+    //  Initialize the batch with identity 
     for (int idx = 0; idx < nbatch; idx++) {
       batchIDs[idx] = idx;
     }
@@ -63,7 +63,7 @@ void DataSet::initialize(int nElements, int nFeatures, int nLabels, int nBatch,
 }
 
 DataSet::~DataSet() {
-  /* Deallocate feature vectors on first processor */
+  //  Deallocate feature vectors on first processor 
   if (examples != NULL) {
     for (int ielem = 0; ielem < nelements; ielem++) {
       delete[] examples[ielem];
@@ -71,7 +71,7 @@ DataSet::~DataSet() {
     delete[] examples;
   }
 
-  /* Deallocate label vectors on last processor */
+  //  Deallocate label vectors on last processor 
   if (labels != NULL) {
     for (int ielem = 0; ielem < nelements; ielem++) {
       delete[] labels[ielem];
@@ -101,15 +101,15 @@ void DataSet::readData(const char *datafolder, const char *examplefile,
                        const char *labelfile) {
   char examplefilename[255], labelfilename[255];
 
-  /* Set the file names  */
+  //  Set the file names  
   sprintf(examplefilename, "%s/%s", datafolder, examplefile);
   sprintf(labelfilename, "%s/%s", datafolder, labelfile);
 
-  /* Read feature vectors on first processor */
+  //  Read feature vectors on first processor 
   if (MPIrank == 0)
     read_matrix(examplefilename, examples, nelements, nfeatures);
 
-  /* Read label vectors on last processor) */
+  //  Read label vectors on last processor) 
   if (MPIrank == MPIsize - 1)
     read_matrix(labelfilename, labels, nelements, nlabels);
 }
@@ -122,20 +122,20 @@ void DataSet::selectBatch(int batch_type, MPI_Comm comm) {
 
   switch (batch_type) {
     case DETERMINISTIC:
-      /* Do nothing, keep the batch fixed. */
+      //  Do nothing, keep the batch fixed. 
       break;
 
     case STOCHASTIC:
 
-      /* Randomly choose a batch on first processor, send to last processor */
+      //  Randomly choose a batch on first processor, send to last processor 
       if (MPIrank == 0) {
-        /* Fill the batchID vector with randomly generated integer */
+        //  Fill the batchID vector with randomly generated integer 
         rand_range = navail - 1;
         for (int ibatch = 0; ibatch < nbatch; ibatch++) {
-          /* Generate a new random index in [0,range] */
+          //  Generate a new random index in [0,range] 
           irand = (int)((((double)rand()) / (double)RAND_MAX) * rand_range);
 
-          /* Set the batchID */
+          //  Set the batchID 
           batchIDs[ibatch] = availIDs[irand];
 
           /* Remove the ID from available IDs (by swapping it with the last
@@ -146,18 +146,18 @@ void DataSet::selectBatch(int batch_type, MPI_Comm comm) {
           rand_range--;
         }
 
-        /* Send to the last processor */
+        //  Send to the last processor 
         int receiver = MPIsize - 1;
         MPI_Isend(batchIDs, nbatch, MPI_INT, receiver, 0, comm, &sendreq);
       }
 
-      /* Receive the batch IDs on last processor */
+      //  Receive the batch IDs on last processor 
       if (MPIrank == MPIsize - 1) {
         int source = 0;
         MPI_Irecv(batchIDs, nbatch, MPI_INT, source, 0, comm, &recvreq);
       }
 
-      /* Wait to finish communication */
+      //  Wait to finish communication 
       if (MPIrank == 0) MPI_Wait(&sendreq, &status);
       if (MPIrank == MPIsize - 1) MPI_Wait(&recvreq, &status);
 

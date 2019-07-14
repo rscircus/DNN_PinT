@@ -11,7 +11,7 @@ L_BFGS::L_BFGS(MPI_Comm comm, int N, int stages) : HessianApprox(comm) {
   M = stages;
   H0 = 1.0;
 
-  /* Allocate memory for sk and yk for all stages */
+  //  Allocate memory for sk and yk for all stages 
   s = new MyReal *[M];
   y = new MyReal *[M];
   for (int imem = 0; imem < M; imem++) {
@@ -23,19 +23,19 @@ L_BFGS::L_BFGS(MPI_Comm comm, int N, int stages) : HessianApprox(comm) {
     }
   }
 
-  /* Allocate memory for rho's values */
+  //  Allocate memory for rho's values 
   rho = new MyReal[M];
   for (int i = 0; i < M; i++) {
     rho[i] = 0.0;
   }
 
-  /* Allocate memory for storing design at previous iteration */
+  //  Allocate memory for storing design at previous iteration 
   design_old = new MyReal[dimN];
   gradient_old = new MyReal[dimN];
 }
 
 L_BFGS::~L_BFGS() {
-  /* Deallocate memory */
+  //  Deallocate memory 
   delete[] rho;
   for (int imem = 0; imem < M; imem++) {
     delete[] s[imem];
@@ -54,12 +54,12 @@ void L_BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
   MyReal *alpha = new MyReal[M];
   int imax, imin;
 
-  /* Initialize the ascentdir with steepest descent */
+  //  Initialize the ascentdir with steepest descent 
   for (int idir = 0; idir < dimN; idir++) {
     ascentdir[idir] = gradient[idir];
   }
 
-  /* Set range of the two-loop recursion */
+  //  Set range of the two-loop recursion 
   imax = iter - 1;
   if (iter < M) {
     imin = 0;
@@ -67,29 +67,29 @@ void L_BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
     imin = iter - M;
   }
 
-  /* Loop backwards through lbfgs memory */
+  //  Loop backwards through lbfgs memory 
   for (int i = imax; i >= imin; i--) {
     imemory = i % M;
-    /* Compute alpha */
+    //  Compute alpha 
     alpha[imemory] =
         rho[imemory] * vecdot_par(dimN, s[imemory], ascentdir, MPIcomm);
-    /* Update the ascentdir */
+    //  Update the ascentdir 
     for (int idir = 0; idir < dimN; idir++) {
       ascentdir[idir] -= alpha[imemory] * y[imemory][idir];
     }
   }
 
-  /* scale the ascentdir by H0 */
+  //  scale the ascentdir by H0 
   for (int idir = 0; idir < dimN; idir++) {
     ascentdir[idir] *= H0;
   }
 
-  /* loop forwards through the l-bfgs memory */
+  //  loop forwards through the l-bfgs memory 
   for (int i = imin; i <= imax; i++) {
     imemory = i % M;
-    /* Compute beta */
+    //  Compute beta 
     beta = rho[imemory] * vecdot_par(dimN, y[imemory], ascentdir, MPIcomm);
-    /* Update the ascentdir */
+    //  Update the ascentdir 
     for (int idir = 0; idir < dimN; idir++) {
       ascentdir[idir] += s[imemory][idir] * (alpha[imemory] - beta);
     }
@@ -99,20 +99,20 @@ void L_BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
 }
 
 void L_BFGS::updateMemory(int iter, MyReal *design, MyReal *gradient) {
-  /* Update lbfgs memory only if iter > 0 */
+  //  Update lbfgs memory only if iter > 0 
   if (iter > 0) {
     MyReal yTy, yTs;
 
-    /* Get storing state */
+    //  Get storing state 
     int imemory = (iter - 1) % M;
 
-    /* Update BFGS memory for s, y */
+    //  Update BFGS memory for s, y 
     for (int idir = 0; idir < dimN; idir++) {
       y[imemory][idir] = gradient[idir] - gradient_old[idir];
       s[imemory][idir] = design[idir] - design_old[idir];
     }
 
-    /* Update rho and H0 */
+    //  Update rho and H0 
     yTs = vecdot_par(dimN, y[imemory], s[imemory], MPIcomm);
     yTy = vecdot_par(dimN, y[imemory], y[imemory], MPIcomm);
     if (yTs == 0.0) {
@@ -127,7 +127,7 @@ void L_BFGS::updateMemory(int iter, MyReal *design, MyReal *gradient) {
     H0 = yTs / yTy;
   }
 
-  /* Update old design and gradient */
+  //  Update old design and gradient 
   vec_copy(dimN, design, design_old);
   vec_copy(dimN, gradient, gradient_old);
 }
@@ -145,11 +145,11 @@ BFGS::BFGS(MPI_Comm comm, int N) : HessianApprox(comm) {
   A = new MyReal[N * N];
   B = new MyReal[N * N];
 
-  /* Allocate memory for storing design at previous iteration */
+  //  Allocate memory for storing design at previous iteration 
   design_old = new MyReal[dimN];
   gradient_old = new MyReal[dimN];
 
-  /* Sanity check */
+  //  Sanity check 
   int size;
   MPI_Comm_size(MPIcomm, &size);
   if (size > 1)
@@ -181,7 +181,7 @@ BFGS::~BFGS() {
 }
 
 void BFGS::updateMemory(int iter, MyReal *design, MyReal *gradient) {
-  /* Update BFGS memory for s, y */
+  //  Update BFGS memory for s, y 
   for (int idir = 0; idir < dimN; idir++) {
     y[idir] = gradient[idir] - gradient_old[idir];
     s[idir] = design[idir] - design_old[idir];
@@ -192,20 +192,20 @@ void BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
   MyReal yTy, yTs, H0;
   MyReal b, rho;
 
-  /* Steepest descent in first iteration */
+  //  Steepest descent in first iteration 
   if (iter == 0) {
     setIdentity();
     matvec(dimN, Hessian, gradient, ascentdir);
     return;
   }
 
-  /* Check curvature conditoin */
+  //  Check curvature conditoin 
   yTs = vecdot(dimN, y, s);
   if (yTs < 1e-12) {
     printf(" Warning: Curvature condition not satisfied %1.14e \n", yTs);
     setIdentity();
   } else {
-    /* Scale first Hessian approximation */
+    //  Scale first Hessian approximation 
     yTy = vecdot(dimN, y, y);
     if (iter == 1) {
       H0 = yTs / yTy;
@@ -220,18 +220,18 @@ void BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
      *       A = Hys'
      */
 
-    /* Compute A = Hys' */
+    //  Compute A = Hys' 
     matvec(dimN, Hessian, y, Hy);
     vecvecT(dimN, Hy, s, A);
 
-    /* scalar 1 + rho y'Hy */
+    //  scalar 1 + rho y'Hy 
     rho = 1. / yTs;
     b = 1.0 + rho * vecdot(dimN, y, Hy);
 
-    /* Compute B */
+    //  Compute B 
     vecvecT(dimN, s, s, B);
 
-    /* H += rho * (b*B - (A+A')) */
+    //  H += rho * (b*B - (A+A')) 
     for (int i = 0; i < dimN; i++) {
       for (int j = 0; j < dimN; j++) {
         Hessian[i * dimN + j] +=
@@ -240,7 +240,7 @@ void BFGS::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
     }
   }
 
-  /* Compute the ascentdir */
+  //  Compute the ascentdir 
   matvec(dimN, Hessian, gradient, ascentdir);
 }
 
@@ -251,7 +251,7 @@ Identity::~Identity() {}
 void Identity::updateMemory(int iter, MyReal *design, MyReal *gradient) {}
 
 void Identity::computeAscentDir(int iter, MyReal *gradient, MyReal *ascentdir) {
-  /*  Steepest descent */
+  //   Steepest descent 
   for (int i = 0; i < dimN; i++) {
     ascentdir[i] = gradient[i];
   }

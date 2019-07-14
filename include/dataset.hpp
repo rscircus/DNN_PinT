@@ -7,34 +7,34 @@
 
 class DataSet {
  protected:
-  int nelements; /* Number of data elements */
-  int nfeatures; /* Number of features per element */
-  int nlabels;   /* Number of different labels (i.e. classes) per element */
+  int nelements; //  Number of data elements 
+  int nfeatures; //  Number of features per element 
+  int nlabels;   //  Number of different labels (i.e. classes) per element 
 
-  MyReal **examples; /* Array of Feature vectors (dim: nelements x nfeatures) */
-  MyReal **labels;   /* Array of Label vectors (dim: nelements x nlabels) */
+  MyReal **examples; //  Array of Feature vectors (dim: nelements x nfeatures) 
+  MyReal **labels;   //  Array of Label vectors (dim: nelements x nlabels) 
 
-  int nbatch;    /* Size of the batch */
-  int *batchIDs; /* Array of batch indicees */
+  int nbatch;    //  Size of the batch 
+  int *batchIDs; //  Array of batch indicees 
 
-  int MPIsize; /* Size of the global communicator */
-  int MPIrank; /* Processors rank */
+  int MPIsize; //  Size of the global communicator 
+  int MPIrank; //  Processors rank 
 
   int *availIDs; /* Auxilliary: holding available batchIDs when generating a
                     batch */
-  int navail; /* Auxilliary: holding number of currently available batchIDs */
+  int navail; //  Auxilliary: holding number of currently available batchIDs 
 
  public:
-  /* Default constructor */
+  //  Default constructor 
   DataSet();
 
-  /* Destructor */
+  //  Destructor 
   ~DataSet();
 
   void initialize(int nElements, int nFeatures, int nLabels, int nBatch,
                   MPI_Comm Comm);
 
-  /* Return the batch size*/
+  //  Return the batch size
   int getnBatch();
 
   /* Return the feature vector of a certain batchID. If not stored on this
@@ -45,7 +45,7 @@ class DataSet {
    * processor, return NULL */
   MyReal *getLabel(int id);
 
-  /* Read data from file */
+  //  Read data from file 
   void readData(const char *datafolder, const char *examplefile,
                 const char *labelfile);
 
@@ -53,6 +53,6 @@ class DataSet {
    * stochastic */
   void selectBatch(int batch_type, MPI_Comm comm);
 
-  /* print current batch to screen */
+  //  print current batch to screen 
   void printBatch();
 };

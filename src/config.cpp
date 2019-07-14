@@ -5,9 +5,9 @@
 #include <cstring>
 
 Config::Config() {
-  /* --- Set DEFAULT parameters of the config file options --- */
+  // Set DEFAULT parameters of the config file options --- 
 
-  /* Data st */
+  // Data st 
   datafolder = "NONE";
   ftrain_ex = "NONE";
   fval_ex = "NONE";
@@ -21,7 +21,7 @@ Config::Config() {
   nfeatures = 2;
   nclasses = 5;
 
-  /* Neural Network */
+  // Neural Network 
   nchannels = 8;
   nlayers = 32;
   T = 10.0;
@@ -32,7 +32,7 @@ Config::Config() {
   weights_init = 0.0;
   weights_class_init = 0.001;
 
-  /* XBraid */
+  // XBraid 
   braid_cfactor0 = 4;
   braid_cfactor = 4;
   braid_maxlevels = 10;
@@ -47,7 +47,7 @@ Config::Config() {
   braid_nrelax0 = 1;
   braid_nrelax = 1;
 
-  /* Optimization */
+  // Optimization 
   batch_type = DETERMINISTIC;
   nbatch = ntraining;  // full batch
   gamma_tik = 1e-07;
@@ -67,14 +67,14 @@ Config::Config() {
 Config::~Config() {}
 
 int Config::readFromFile(char *configfilename) {
-  /* Parse the config file */
+  // Parse the config file 
   config_option *co;
   if ((co = parsefile(configfilename)) == NULL) {
     perror("parsefile()");
     return -1;
   }
 
-  /* Set the config options */
+  // Set the config options 
   while (1) {
     if (strcmp(co->key, "datafolder") == 0) {
       datafolder = co->value;
@@ -241,7 +241,7 @@ int Config::readFromFile(char *configfilename) {
     }
   }
 
-  /* Sanity check */
+  // Sanity check 
   if (nfeatures > nchannels || nclasses > nchannels) {
     printf("ERROR! Choose a wider netword!\n");
     printf(" -- nFeatures = %d\n", nfeatures);
@@ -295,7 +295,7 @@ int Config::writeToFile(FILE *outfile) {
   const char *activname, *networktypename, *hessetypename, *optimtypename,
       *stepsizetypename;
 
-  /* Get names of some int options */
+  // Get names of some int options 
   switch (activation) {
     case TANH:
       activname = "tanh";
@@ -356,7 +356,7 @@ int Config::writeToFile(FILE *outfile) {
       stepsizetypename = "invalid!";
   }
 
-  /* print config option */
+  // print config option 
   fprintf(outfile, "# Problem setup: datafolder           %s \n", datafolder);
   fprintf(outfile, "#                training examples    %s \n", ftrain_ex);
   fprintf(outfile, "#                training labels      %s \n",

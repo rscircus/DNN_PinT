@@ -40,12 +40,12 @@
 #define MASTER_NODE 0
 
 int main(int argc, char *argv[]) {
-  /* --- Data --- */
+  // Data --- 
   Config *config;          /**< Storing configurations */
   DataSet *trainingdata;   /**< Training dataset */
   DataSet *validationdata; /**< Validation dataset */
 
-  /* --- Network --- */
+  // Network --- 
   Network *network; /**< DNN Network architecture */
   int ilower,
       iupper; /**< Index of first and last layer stored on this processor */
@@ -58,12 +58,12 @@ int main(int argc, char *argv[]) {
   MyReal accurtrain_out = 0.0;
   MyReal accurval_out = 0.0;
 
-  /* --- XBraid --- */
+  // XBraid --- 
   myBraidApp *primaltrainapp;         /**< Braid App for training data */
   myAdjointBraidApp *adjointtrainapp; /**< Adjoint Braid for training data */
   myBraidApp *primalvalapp;           /**< Braid App for validation data */
 
-  /* --- Optimization --- */
+  // Optimization --- 
   int ndesign_local;  /**< Number of local design variables on this processor */
   int ndesign_global; /**< Number of global design variables (sum of local)*/
   MyReal *ascentdir = 0; /**< Direction for design updates */
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   MyReal ls_objective, test_obj;
   int ls_iter;
 
-  /* --- other --- */
+  // other --- 
   // TODO: What is this? Why do you need it?
   int myid;
   int size;
@@ -88,18 +88,18 @@ int main(int argc, char *argv[]) {
   MyReal StartTime, StopTime, myMB, globalMB;
   MyReal UsedTime = 0.0;
 
-  /* Initialize MPI */
+  // Initialize MPI 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  /* Instantiate objects */
+  // Instantiate objects 
   config = new Config();
   trainingdata = new DataSet();
   validationdata = new DataSet();
   network = new Network();
 
-  /* Read config file */
+  // Read config file 
   if (argc != 2) {
     if (myid == MASTER_NODE) {
       printf("\n");
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  /* Initialize training and validation data */
+  // Initialize training and validation data 
   trainingdata->initialize(config->ntraining, config->nfeatures,
                            config->nclasses, config->nbatch, MPI_COMM_WORLD);
   trainingdata->readData(config->datafolder, config->ftrain_ex,
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
   validationdata->readData(config->datafolder, config->fval_ex,
                            config->fval_labels);
 
-  /* Initialize XBraid */
+  // Initialize XBraid 
   primaltrainapp =
       new myBraidApp(trainingdata, network, config, MPI_COMM_WORLD);
   adjointtrainapp = new myAdjointBraidApp(
@@ -135,20 +135,20 @@ int main(int argc, char *argv[]) {
   primalvalapp =
       new myBraidApp(validationdata, network, config, MPI_COMM_WORLD);
 
-  /* Initialize the network  */
+  // Initialize the network  
   primaltrainapp->GetGridDistribution(&ilower, &iupper);
   network->createNetworkBlock(ilower, iupper, config, MPI_COMM_WORLD);
   network->setInitialDesign(config);
   ndesign_local = network->getnDesignLocal();
   ndesign_global = network->getnDesignGlobal();
 
-  /* Print some neural network information */
+  // Print some neural network information 
   printf("%d: Layer range: [%d, %d] / %d\n", myid, ilower, iupper,
          config->nlayers);
   printf("%d: Design variables (local/global): %d/%d\n", myid, ndesign_local,
          ndesign_global);
 
-  /* Initialize Hessian approximation */
+  // Initialize Hessian approximation 
   HessianApprox *hessian = 0;
   switch (config->hessianapprox_type) {
     case BFGS_SERIAL:
@@ -165,9 +165,9 @@ int main(int argc, char *argv[]) {
       return 0;
   }
 
-  /* Allocate ascent direction for design updates */
+  // Allocate ascent direction for design updates 
 
-  /* Initialize optimization parameters */
+  // Initialize optimization parameters 
   ascentdir = new MyReal[ndesign_local];
   stepsize = config->getStepsize(0);
   gnorm = 0.0;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
   ls_iter = 0;
   ls_stepsize = stepsize;
 
-  /* Open and prepare optimization output file*/
+  // Open and prepare optimization output file
   if (myid == MASTER_NODE) {
     sprintf(optimfilename, "%s/%s.dat", config->datafolder, "optim");
     optimfile = fopen(optimfilename, "w");
@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
             "Accur_train  Accur_val   Time(sec)\n");
   }
 
-  /* Measure wall time */
+  // Measure wall time 
   StartTime = MPI_Wtime();
   StopTime = 0.0;
   UsedTime = 0.0;
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
    *
    */
   for (int iter = 0; iter < config->maxoptimiter; iter++) {
-    /* Set up the current batch */
+    // Set up the current batch 
     trainingdata->selectBatch(config->batch_type, MPI_COMM_WORLD);
 
     /** Solve state and adjoint equations (2.15) and (2.17)
@@ -210,19 +210,19 @@ int main(int argc, char *argv[]) {
     rnorm = primaltrainapp->run();
     rnorm_adj = adjointtrainapp->run();
 
-    /* Get output */
+    // Get output 
     objective = primaltrainapp->getObjective();
     loss_train = network->getLoss();
     accur_train = network->getAccuracy();
 
-    /* --- Validation data: Get accuracy --- */
+    // Validation data: Get accuracy --- 
     if (config->validationlevel > 0) {
       primalvalapp->run();
       loss_val = network->getLoss();
       accur_val = network->getAccuracy();
     }
 
-    /* --- Optimization control and output ---*/
+    // Optimization control and output ---
 
     /** Compute global gradient norm
      *
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
     MPI_Allreduce(&accur_val, &accurval_out, 1, MPI_MyReal, MPI_SUM,
                   MPI_COMM_WORLD);
 
-    /* Output */
+    // Output 
     StopTime = MPI_Wtime();
     UsedTime = StopTime - StartTime;
     if (myid == MASTER_NODE) {
@@ -281,9 +281,9 @@ int main(int argc, char *argv[]) {
       break;
     }
 
-    /* If optimization didn't converge, continue */
+    // If optimization didn't converge, continue 
 
-    /* --- Design update --- */
+    // Design update --- 
 
     /** Compute search direction
      *
@@ -301,11 +301,11 @@ int main(int argc, char *argv[]) {
     network->updateDesign(-1.0 * stepsize, ascentdir, MPI_COMM_WORLD);
 
     if (config->stepsize_type == BACKTRACKINGLS) {
-      /* Compute wolfe condition */
+      // Compute wolfe condition 
       wolfe = vecdot_par(ndesign_local, network->getGradient(), ascentdir,
                          MPI_COMM_WORLD);
 
-      /* Start linesearch iterations */
+      // Start linesearch iterations 
       ls_stepsize = config->getStepsize(iter);
       stepsize = ls_stepsize;
       for (ls_iter = 0; ls_iter < config->ls_maxiter; ls_iter++) {
@@ -318,23 +318,23 @@ int main(int argc, char *argv[]) {
         if (myid == MASTER_NODE)
           printf("ls_iter = %d:\tls_objective = %1.14e\ttest_obj = %1.14e\n",
                  ls_iter, ls_objective, test_obj);
-        /* Test the wolfe condition */
+        // Test the wolfe condition 
         if (ls_objective <= test_obj) {
-          /* Success, use this new design */
+          // Success, use this new design 
           break;
         } else {
-          /* Test for line-search failure */
+          // Test for line-search failure 
           if (ls_iter == config->ls_maxiter - 1) {
             if (myid == MASTER_NODE)
               printf("\n\n   WARNING: LINESEARCH FAILED! \n\n");
             break;
           }
 
-          /* Go back part of the step */
+          // Go back part of the step 
           network->updateDesign((1.0 - config->ls_factor) * stepsize, ascentdir,
                                 MPI_COMM_WORLD);
 
-          /* Decrease the stepsize */
+          // Decrease the stepsize 
           ls_stepsize = ls_stepsize * config->ls_factor;
           stepsize = ls_stepsize;
         }
@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /* --- Run final validation and write prediction file --- */
+  // Run final validation and write prediction file --- 
   if (config->validationlevel > -1) {
     if (myid == MASTER_NODE) printf("\n --- Run final validation ---\n");
 
@@ -355,7 +355,7 @@ int main(int argc, char *argv[]) {
 
   // write_vector("design.dat", design, ndesign);
 
-  /* Print some statistics */
+  // Print some statistics 
   StopTime = MPI_Wtime();
   UsedTime = StopTime - StartTime;
   getrusage(RUSAGE_SELF, &r_usage);
@@ -371,22 +371,22 @@ int main(int argc, char *argv[]) {
     printf("\n");
   }
 
-  /* Clean up XBraid */
+  // Clean up XBraid 
   delete network;
 
   delete primaltrainapp;
   delete adjointtrainapp;
   delete primalvalapp;
 
-  /* Delete optimization vars */
+  // Delete optimization vars 
   delete hessian;
   delete[] ascentdir;
 
-  /* Delete training and validation examples  */
+  // Delete training and validation examples  
   delete trainingdata;
   delete validationdata;
 
-  /* Close optim file */
+  // Close optim file 
   if (myid == MASTER_NODE) {
     fclose(optimfile);
     printf("Optimfile: %s\n", optimfilename);

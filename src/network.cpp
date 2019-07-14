@@ -29,7 +29,7 @@ Network::Network() {
 
 void Network::createNetworkBlock(int StartLayerID, int EndLayerID,
                                  Config *config, MPI_Comm Comm) {
-  /* Initilizize */
+  // Initilizize 
   startlayerID = StartLayerID;
   endlayerID = EndLayerID;
   nlayers_local = endlayerID - startlayerID + 1;
@@ -38,12 +38,12 @@ void Network::createNetworkBlock(int StartLayerID, int EndLayerID,
   dt = (config->T) / (MyReal)(config->nlayers - 2);  // nlayers-2 = nhiddenlayers
   comm = Comm;
 
-  /* --- Create the layers --- */
+  // Create the layers --- 
   ndesign_local = 0;
 
   if (startlayerID == 0)  // Opening layer
   {
-    /* Create the opening layer */
+    // Create the opening layer 
     int index = -1;
     openlayer = createLayer(index, config);
     ndesign_local += openlayer->getnDesign();
@@ -62,25 +62,25 @@ void Network::createNetworkBlock(int StartLayerID, int EndLayerID,
     // nlayers_local, layers[storeID]->getnDesign());
   }
 
-  /* Create left neighbouring layer */
+  // Create left neighbouring layer 
   int leftID = startlayerID - 1;
   layer_left = createLayer(leftID, config);
 
-  /* Create right neighbrouing layer */
+  // Create right neighbrouing layer 
   int rightID = endlayerID + 1;
   layer_right = createLayer(rightID, config);
 
-  /* Sum up global number of design vars */
+  // Sum up global number of design vars 
   MPI_Allreduce(&ndesign_local, &ndesign_global, 1, MPI_INT, MPI_SUM, comm);
 
-  /* Store maximum number of designs over all layers layermax */
+  // Store maximum number of designs over all layers layermax 
   ndesign_layermax = computeLayermax();
 
-  /* Allocate memory for network design and gradient variables */
+  // Allocate memory for network design and gradient variables 
   design = new MyReal[ndesign_local];
   gradient = new MyReal[ndesign_local];
 
-  /* Set the memory locations for all layers */
+  // Set the memory locations for all layers 
   int istart = 0;
   if (openlayer != NULL)  // Openlayer on first processor
   {
@@ -95,13 +95,13 @@ void Network::createNetworkBlock(int StartLayerID, int EndLayerID,
     istart += layers[getLocalID(ilayer)]->getnDesign();
   }
 
-  /* left anr right neighbouring layer design, if exists */
+  // left anr right neighbouring layer design, if exists 
   if (layer_left != NULL) {
     MyReal *left_design = new MyReal[layer_left->getnDesign()];
     MyReal *left_gradient = new MyReal[layer_left->getnDesign()];
     layer_left->setMemory(left_design, left_gradient);
   }
-  /* Create and initialize right neighbouring layer design, if exists */
+  // Create and initialize right neighbouring layer design, if exists 
   if (layer_right != NULL) {
     MyReal *right_design = new MyReal[layer_right->getnDesign()];
     MyReal *right_gradient = new MyReal[layer_right->getnDesign()];
@@ -110,20 +110,20 @@ void Network::createNetworkBlock(int StartLayerID, int EndLayerID,
 }
 
 Network::~Network() {
-  /* Delete openlayer */
+  // Delete openlayer 
   if (openlayer != NULL) delete openlayer;
 
-  /* Delete intermediate and classification layers */
+  // Delete intermediate and classification layers 
   for (int ilayer = 0; ilayer < nlayers_local; ilayer++) {
     delete layers[ilayer];
   }
   delete[] layers;
 
-  /* Delete design and gradient */
+  // Delete design and gradient 
   delete[] design;
   delete[] gradient;
 
-  /* Delete neighbouring layer information */
+  // Delete neighbouring layer information 
   if (layer_left != NULL) {
     delete[] layer_left->getWeights();
     delete[] layer_left->getWeightsBar();
@@ -240,17 +240,17 @@ int Network::computeLayermax() {
   int ndesignlayer;
   int max = 0;
 
-  /* Loop over all local layers */
+  // Loop over all local layers 
   for (int ilayer = startlayerID; ilayer <= endlayerID; ilayer++) {
     if (ilayer < nlayers_global - 2)  // excludes classification layer
     {
-      /* Update maximum */
+      // Update maximum 
       ndesignlayer = layers[getLocalID(ilayer)]->getnDesign();
       if (ndesignlayer > max) max = ndesignlayer;
     }
   }
 
-  /* Get maximum over all local layer blocks */
+  // Get maximum over all local layer blocks 
   int mymax = max;
   MPI_Allreduce(&mymax, &max, 1, MPI_INT, MPI_MAX, comm);
 
@@ -273,25 +273,25 @@ void Network::setInitialDesign(Config *config) {
       design_init[i] = (MyReal)rand() / ((MyReal)RAND_MAX);
     }
   }
-  /* Scatter initial design to all processors */
+  // Scatter initial design to all processors 
   MPI_ScatterVector(design_init, design, ndesign_local, 0, comm);
 
-  /* Scale the initial design by a factor and read from file, if set */
+  // Scale the initial design by a factor and read from file, if set 
 
-  /* Opening layer on first processor */
+  // Opening layer on first processor 
   if (startlayerID == 0) {
-    /* Scale design by the factor */
+    // Scale design by the factor 
     factor = config->weights_open_init;
     openlayer->scaleDesign(factor);
 
-    /* if set, overwrite opening design from file */
+    // if set, overwrite opening design from file 
     if (strcmp(config->weightsopenfile, "NONE") != 0) {
       sprintf(filename, "%s/%s", config->datafolder, config->weightsopenfile);
       read_vector(filename, openlayer->getWeights(), openlayer->getnDesign());
     }
   }
 
-  /* Intermediate (hidden) and classification layers */
+  // Intermediate (hidden) and classification layers 
   for (int ilayer = startlayerID; ilayer <= endlayerID; ilayer++) {
     if (ilayer < nlayers_global - 1)  // Intermediate layer
     {
@@ -301,11 +301,11 @@ void Network::setInitialDesign(Config *config) {
       factor = config->weights_class_init;
     }
 
-    /* Set memory location and scale the current design by the factor */
+    // Set memory location and scale the current design by the factor 
     int storeID = getLocalID(ilayer);
     layers[storeID]->scaleDesign(factor);
 
-    /* if set, overwrite classification design from file */
+    // if set, overwrite classification design from file 
     if (ilayer == nlayers_global - 1) {
       if (strcmp(config->weightsclassificationfile, "NONE") != 0) {
         sprintf(filename, "%s/%s", config->datafolder,
@@ -316,7 +316,7 @@ void Network::setInitialDesign(Config *config) {
     }
   }
 
-  /* Communicate the neighbours across processors */
+  // Communicate the neighbours across processors 
   MPI_CommunicateNeighbours(comm);
 
   if (myid == 0) delete[] design_init;
@@ -330,7 +330,7 @@ void Network::MPI_CommunicateNeighbours(MPI_Comm comm) {
   MPI_Request sendfirstreq, recvfirstreq;
   MPI_Status status;
 
-  /* Allocate buffers */
+  // Allocate buffers 
   int size_left = -1;
   int size_right = -1;
 
@@ -342,7 +342,7 @@ void Network::MPI_CommunicateNeighbours(MPI_Comm comm) {
   /* --- All but the first process receive the last layer from left neighbour
    * --- */
   if (myid > 0) {
-    /* Receive from left neighbour */
+    // Receive from left neighbour 
     int source = myid - 1;
 
     size_left = layer_left->getnDesign();
@@ -357,10 +357,10 @@ void Network::MPI_CommunicateNeighbours(MPI_Comm comm) {
     size_left = layers[getLocalID(endlayerID)]->getnDesign();
     sendlast = new MyReal[size_left];
 
-    /* Pack the last layer into a buffer */
+    // Pack the last layer into a buffer 
     layers[getLocalID(endlayerID)]->packDesign(sendlast, size_left);
 
-    /* Send to right neighbour */
+    // Send to right neighbour 
     int receiver = myid + 1;
     MPI_Isend(sendlast, size_left, MPI_MyReal, receiver, 0, comm, &sendlastreq);
   }
@@ -368,7 +368,7 @@ void Network::MPI_CommunicateNeighbours(MPI_Comm comm) {
   /* --- All but the last processor recv the first layer from the right
    * neighbour --- */
   if (myid < comm_size - 1) {
-    /* Receive from right neighbour */
+    // Receive from right neighbour 
     int source = myid + 1;
 
     size_right = layer_right->getnDesign();
@@ -384,32 +384,32 @@ void Network::MPI_CommunicateNeighbours(MPI_Comm comm) {
     size_right = layers[getLocalID(startlayerID)]->getnDesign();
     sendfirst = new MyReal[size_right];
 
-    /* Pack the first layer into a buffer */
+    // Pack the first layer into a buffer 
     layers[getLocalID(startlayerID)]->packDesign(sendfirst, size_right);
 
-    /* Send to left neighbour */
+    // Send to left neighbour 
     int receiver = myid - 1;
     MPI_Isend(sendfirst, size_right, MPI_MyReal, receiver, 1, comm,
               &sendfirstreq);
   }
 
-  /* Wait to finish up communication */
+  // Wait to finish up communication 
   if (myid > 0) MPI_Wait(&recvlastreq, &status);
   if (myid < comm_size - 1) MPI_Wait(&sendlastreq, &status);
   if (myid < comm_size - 1) MPI_Wait(&recvfirstreq, &status);
   if (myid > 0) MPI_Wait(&sendfirstreq, &status);
 
-  /* Unpack and store the left received layer */
+  // Unpack and store the left received layer 
   if (myid > 0) {
     layer_left->unpackDesign(recvlast);
   }
 
-  /* Unpack and store the right received layer */
+  // Unpack and store the right received layer 
   if (myid < comm_size - 1) {
     layer_right->unpackDesign(recvfirst);
   }
 
-  /* Free the buffer */
+  // Free the buffer 
   if (sendlast != 0) delete[] sendlast;
   if (recvlast != 0) delete[] recvlast;
   if (sendfirst != 0) delete[] sendfirst;
@@ -424,7 +424,7 @@ void Network::evalClassification(DataSet *data, MyReal **state, int output) {
   FILE *classfile;
   ClassificationLayer *classificationlayer;
 
-  /* Get classification layer */
+  // Get classification layer 
   classificationlayer =
       dynamic_cast<ClassificationLayer *>(getLayer(nlayers_global - 2));
   if (classificationlayer == NULL) {
@@ -432,7 +432,7 @@ void Network::evalClassification(DataSet *data, MyReal **state, int output) {
     exit(1);
   }
 
-  /* open file for printing predicted file */
+  // open file for printing predicted file 
   if (output) classfile = fopen("classprediction.dat", "w");
 
   loss = 0.0;
@@ -444,10 +444,10 @@ void Network::evalClassification(DataSet *data, MyReal **state, int output) {
     for (int ic = 0; ic < nchannels; ic++) {
       tmpstate[ic] = state[iex][ic];
     }
-    /* Apply classification on tmpstate */
+    // Apply classification on tmpstate 
     classificationlayer->setLabel(data->getLabel(iex));
     classificationlayer->applyFWD(tmpstate);
-    /* Evaluate Loss */
+    // Evaluate Loss 
     loss += classificationlayer->crossEntropy(tmpstate);
     success_local = classificationlayer->prediction(tmpstate, &class_id);
     success += success_local;
@@ -471,7 +471,7 @@ void Network::evalClassification_diff(DataSet *data, MyReal **primalstate,
   MyReal *tmpstate = new MyReal[nchannels];
   ClassificationLayer *classificationlayer;
 
-  /* Get classification layer */
+  // Get classification layer 
   classificationlayer =
       dynamic_cast<ClassificationLayer *>(getLayer(nlayers_global - 2));
   if (classificationlayer == NULL) {
@@ -483,14 +483,14 @@ void Network::evalClassification_diff(DataSet *data, MyReal **primalstate,
   MyReal loss_bar = 1. / nbatch;
 
   for (int iex = 0; iex < nbatch; iex++) {
-    /* Recompute the Classification */
+    // Recompute the Classification 
     for (int ic = 0; ic < nchannels; ic++) {
       tmpstate[ic] = primalstate[iex][ic];
     }
     classificationlayer->setLabel(data->getLabel(iex));
     classificationlayer->applyFWD(tmpstate);
 
-    /* Derivative of Loss and classification. */
+    // Derivative of Loss and classification. 
     classificationlayer->crossEntropy_diff(tmpstate, adjointstate[iex],
                                            loss_bar);
     classificationlayer->applyBWD(primalstate[iex], adjointstate[iex],
@@ -504,11 +504,11 @@ void Network::evalClassification_diff(DataSet *data, MyReal **primalstate,
 }
 
 void Network::updateDesign(MyReal stepsize, MyReal *direction, MPI_Comm comm) {
-  /* Update design locally on this network-block */
+  // Update design locally on this network-block 
   for (int id = 0; id < ndesign_local; id++) {
     design[id] += stepsize * direction[id];
   }
 
-  /* Communicate design across neighbouring processors (ghostlayers) */
+  // Communicate design across neighbouring processors (ghostlayers) 
   MPI_CommunicateNeighbours(comm);
 }
