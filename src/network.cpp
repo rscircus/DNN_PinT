@@ -179,7 +179,7 @@ Layer *Network::createLayer(int index, Config *config) {
         }
         break;
       case CONVOLUTIONAL:
-        /**< (Weight_open_init == 0.0) not needed for convolutional layers*/
+        // (Weight_open_init == 0.0) not needed for convolutional layers
         if (config->openlayer_type == 0) {
           layer = new OpenConvLayer(config->nfeatures, nchannels);
         } else if (config->openlayer_type == 1) {
